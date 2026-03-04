@@ -1,0 +1,108 @@
+# Cấu hình toàn hệ thống Wind Turbine SCADA Fault Detection
+
+kaggle:
+  dataset: "noobtube99/wind-turbine-scada-data"
+  api_version: "1"
+
+paths:
+  raw_data: "data/raw"
+  processed_data: "data/processed"
+  models: "data/models"
+  logs: "logs"
+
+data:
+  columns:
+    datetime: "Date/Time"
+    active_power: "LV ActivePower (kW)"
+    wind_speed: "Wind Speed (m/s)"
+    theoretical_power: "Theoretical_Power_Curve (KWh)"
+    wind_direction: "Wind Direction (°)"
+  sampling_interval_minutes: 10
+  datetime_format: "%d %m %Y %H:%M"
+
+signal_processing:
+  noise_filter:
+    cutoff_frequency: 0.1       # Hz
+    filter_order: 4
+    wavelet_type: "db4"
+    wavelet_level: 5
+    threshold_method: "soft"    # soft hoặc hard
+    process_variance: 1.0e-5    # Kalman filter
+    measurement_variance: 1.0e-2
+    moving_average_window: 10
+    savitzky_golay_window: 11
+    savitzky_golay_polyorder: 3
+
+  fft:
+    sampling_rate: 0.001667     # 1/600 Hz (10 phút)
+    window_size: 256
+    overlap: 128
+    n_peaks: 5
+
+anomaly_detection:
+  z_score_threshold: 3.0
+  iqr_multiplier: 1.5
+  missing_threshold: 0.05
+  rolling_window: 100
+  drift_window: 500
+  flatline_window: 50
+  flatline_threshold: 0.001
+  lof_n_neighbors: 20
+  isolation_forest_contamination: 0.05
+
+ml_models:
+  test_size: 0.2
+  random_state: 42
+  n_estimators: 100
+  cross_val_folds: 5
+
+  random_forest:
+    n_estimators: [100, 200, 300]
+    max_depth: [10, 20, null]
+    min_samples_split: [2, 5]
+
+  xgboost:
+    n_estimators: [100, 200]
+    max_depth: [3, 6, 9]
+    learning_rate: [0.01, 0.1, 0.3]
+
+  svm:
+    C: [0.1, 1.0, 10.0]
+    kernel: ["rbf"]
+    gamma: ["scale", "auto"]
+
+  lstm:
+    epochs: 50
+    batch_size: 32
+    validation_split: 0.1
+    sequence_length: 48
+    encoding_dim: 64
+    encoder_units: [128, 64]
+    decoder_units: [64, 128]
+    anomaly_percentile: 99
+    early_stopping_patience: 10
+
+  feature_engineering:
+    window_size: 100
+    rolling_windows: [10, 50, 100]
+    n_features_select: 20
+    normalization_method: "standard"  # standard, minmax, robust
+
+fault_labels:
+  0: "Normal operation"
+  1: "Sensor fault"
+  2: "Electrical fault"
+  3: "Mechanical fault"
+  4: "Wind condition anomaly"
+  5: "Communication fault"
+
+dashboard:
+  port: 8501
+  host: "localhost"
+  refresh_interval: 30  # giây
+  theme: "dark"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/scada_system.log"
